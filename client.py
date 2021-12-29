@@ -25,7 +25,7 @@ def main():
 
         try:
             time.sleep(2)
-            client.bind(("", 14444))
+            client.bind(("", 13117))
         except:
             pass
         print(u"\u001B[33mClient started, listening for offer requests...\u001B[35m")
