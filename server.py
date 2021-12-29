@@ -4,11 +4,12 @@ import time
 import struct
 import threading
 import random
+import scapy.all
 
 bufferSize = 1024
 clients_array = []
 all_members = 1
-end_time = 100 + time.time()
+end_time = 10 + time.time()
 count = 0
 Players = {}
 result1 = []
@@ -150,26 +151,26 @@ def check_results():
     else:
         # If only player 1 sent an answer or that player 1 sent answer before player 2
         if result2 == [] :
-            if int(result1[1]) == answer:
+            if result1[1] == str(answer):
                 winner = list(Players.keys())[0]
             else:
                 winner = list(Players.keys())[1]
 
         elif result1 == []  :
-            if int(result2[1]) == answer:
+            if result2[1] == str(answer):
                 winner = list(Players.keys())[1]
             else:
                 winner = list(Players.keys())[0]
 
         elif result1[0] < result2[0]:
-            if int(result1[1]) == answer:
+            if result1[1] == str(answer):
                 winner = list(Players.keys())[0]
             else:
                 winner = list(Players.keys())[1]
         # If only player 2 sent an answer or that player 2 sent answer before player 1
 
         elif result1[0] > result2[0]:
-            if int(result2[1]) == answer:
+            if result2[1] == str(answer):
                 winner = list(Players.keys())[1]
             else:
                 winner = list(Players.keys())[0]
@@ -201,6 +202,7 @@ def main():
     global num1
     global num2
     global answer
+    #ip = scapy.all.get_if_addr('eth1')
     # Create UDP socket, listening in port 2054
     UDP_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     UDP_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -222,7 +224,8 @@ def main():
             try:
                 # Send broadcast message to all clients
                 MSG = struct.pack('Ibh', 0xabcddcba, 0x2, 2054)
-                UDP_socket.sendto(MSG, ("<broadcast>", 14444))
+                broadcast = "<broadcast>"
+                UDP_socket.sendto(MSG, ("172.99.255.255", 14444))
                 time.sleep(1)
 
             except:
