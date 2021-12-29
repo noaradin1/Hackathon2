@@ -18,36 +18,30 @@ addresses = []
 num1 = random.randrange(1,4)
 num2 = random.randrange(1,5)
 answer = num1 + num2
-BROADCAST = '<172.1.255.255>'
+TCP_socket = None
+is_first = True
 
 def search_clients():
     global count
+    global is_first
+    global TCP_socket
     locking_count = threading.RLock()
 
-    # try:
     # Create TCP socket, listening in port 2054
-    TCP_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-    print("h")
-    TCP_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    print("h12")
-    TCP_socket.bind(("", 2054))
+    if is_first:
+        TCP_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+        TCP_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        TCP_socket.bind(("", 2054))
+        is_first=False
     TCP_socket.listen(1)
     # While the number of clients is less than 2, wait for more clients
     while  count < 2:
-        print("hey")
         # Accept the next client
         client_socket, addr = TCP_socket.accept()
-        print("im here")
         # Send the client to "add_new_client" function
         new_client = threading.Thread(target=add_new_client, args=(client_socket, addr))
         new_client.start()
-        #with locking_count:
-        #    count += 1  # count the clients
     return
-
-    # except:
-    #     print("Wrong type of message received")
-
 
 # The server adds the new client details to it's data structures
 def add_new_client(client_socket, addr):
@@ -62,7 +56,6 @@ def add_new_client(client_socket, addr):
     # Add the connection and address of the client to lists
     connections.append(client_socket)
     addresses.append(addr)
-    print("new client here")
     try:
         # Save the name of the client
         name = client_socket.recv(1024).decode()
@@ -75,14 +68,12 @@ def add_new_client(client_socket, addr):
             
             # Assign the player to the players dictionary 
             with locking2:
-                print(name)
                 if all_members == 1:
                     Players[name] = (client_socket,1)
                     all_members += 1
                 else:
                     Players[name] = (client_socket,2)
 
-            print("added players")
         # After the player added successfuly, increase the count
         count += 1
         return
@@ -91,17 +82,21 @@ def add_new_client(client_socket, addr):
 
 
 def start_game():
-    # Creating welcoming message
-    welcome_game = "Welcome to Quick Maths.\n" \
-                       "Player 1:\n==\n" + list(Players.keys())[0]\
-                       +"Player 2:\n==\n" + list(Players.keys())[1] +\
-                       "\nPlease answer the following question as fast as you can:\n How much is " +str(num1) + " + " +str(num2)
-    print("created welcoming message")
-    # For each connection, send the welcoming message and send the player to the relevant function
-    options = [Player1,Player2]
-    for i in range(len(connections)):
-        connections[i].send(welcome_game.encode())
-        _thread.start_new_thread(options[i], (connections[i], addresses[i]))
+    try:
+        # Creating welcoming message
+        welcome_game = "Welcome to Quick Maths.\n" \
+                        "Player 1:\n==\n" + list(Players.keys())[0]\
+                        +"Player 2:\n==\n" + list(Players.keys())[1] +\
+                        "\nPlease answer the following question as fast as you can:\n How much is " +str(num1) + " + " +str(num2)
+        print("created welcoming message")
+        # For each connection, send the welcoming message and send the player to the relevant function
+        options = [Player1,Player2]
+        for i in range(len(connections)):
+            connections[i].send(welcome_game.encode())
+            _thread.start_new_thread(options[i], (connections[i], addresses[i]))
+    except:
+        print("error occurred")
+
 
 
 # Player1's game ddd
@@ -148,44 +143,64 @@ def Player2(client,add):
 
 
 def check_results():
-    print(result1)
-    print(result2)
+    winner = ""
     # If nobody sent an answer (on time) - it's a draw
     if result1 == [] and result2 == []:
         finish_message = "Game over! Its a draw"
-    
-    # If only player 1 sent an answer or that player 1 sent answer before player 2
-    elif result2 == [] or (result2!=[] and result1[0] < result2[0]):
-        if int(result1[1]) == answer:
-            finish_message = "\nGame over!\nThe correct answer was " + str(answer) + "!\n\n" \
-                        + "Congratulations to the winners:\n==\n" + "" + list(Players.keys())[0]
-        else:
-            finish_message =  "\nGame over!\nThe correct answer was " + str(answer) + "!\n\n" \
-                        + "Congratulations to the winners:\n==\n" + "" + list(Players.keys())[1]
-    
-    # If only player 2 sent an answer or that player 2 sent answer before player 1
-    elif result1 == [] or (result1!=[] and result1[0] > result2[0]) :
-        if int(result2[1]) == answer:
-            finish_message = "\nGame over!\nThe correct answer was " + str(answer) + "!\n\n" \
-                        + "Congratulations to the winners:\n==\n" + "" + list(Players.keys())[1]
-        else:
-            finish_message = "\nGame over!\nThe correct answer was " + str(answer) + "!\n\n" \
-                        + "Congratulations to the winners:\n==\n" + "" + list(Players.keys())[0]
-    print(finish_message)
+    else:
+        # If only player 1 sent an answer or that player 1 sent answer before player 2
+        if result2 == [] :
+            if int(result1[1]) == answer:
+                winner = list(Players.keys())[0]
+            else:
+                winner = list(Players.keys())[1]
+
+        elif result1 == []  :
+            if int(result2[1]) == answer:
+                winner = list(Players.keys())[1]
+            else:
+                winner = list(Players.keys())[0]
+
+        elif result1[0] < result2[0]:
+            if int(result1[1]) == answer:
+                winner = list(Players.keys())[0]
+            else:
+                winner = list(Players.keys())[1]
+        # If only player 2 sent an answer or that player 2 sent answer before player 1
+
+        elif result1[0] > result2[0]:
+            if int(result2[1]) == answer:
+                winner = list(Players.keys())[1]
+            else:
+                winner = list(Players.keys())[0]
+
+        finish_message = "\nGame over!\nThe correct answer was " + str(answer) + "!\n\n" \
+                            + "Congratulations to the winners:\n==\n" + "" + winner
+
     finish_message = u"\u001B[36m" + finish_message
+    print(finish_message)
     # Sent the results of the game to the players
     for i in range(len(connections)):
         connections[i].send(finish_message.encode())
 
 def close_connections():
     global connections
+    global result1
+    global result2
     # For each connection we will close the connection
     for i in range(len(connections)):
         connections[i].close()
     connections = []
     addresses = []
+    result1 = []
+    result2 = []
 
 def main():
+    global end_time
+    global count
+    global num1
+    global num2
+    global answer
     # Create UDP socket, listening in port 2054
     UDP_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     UDP_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -193,39 +208,35 @@ def main():
     UDP_socket.bind(('', 2054))
     print(u"\u001B[32mServer started' listening on IP address 172.18.0.120\u001B[32m")
     # Search for new clients
-    thread = threading.Thread(target=search_clients, args=())
-    thread.start()
-
-    while time.time() < end_time and count<2:
-
-        try:
-            # Send broadcast message to all clients
-            MSG = struct.pack('Ibh', 0xabcddcba, 0x2, 2054)
-            print("sending")
-            UDP_socket.sendto(MSG, ("<broadcast>", 13117))
-            time.sleep(1)
-
-        except:
-            time.sleep(1)
-    # If the number of clients is 2 - we can start the game
-    if count == 2:
-        start_game()
-        time.sleep(10)
-        check_results()
-        close_connections()
-
-    while time.time() < end_time:
-        time.sleep(1)
-
-    time.sleep(100)
-
-    # The server closes
-    print("Game over, sending out offer requests...")
     while True:
-        # send
-        MSG = struct.pack('Ibh', 0xabcddcba, 0x2, 0xA)
-        UDP_socket.sendto(MSG, ('<broadcast>', 13117))
+        count = 0
+        thread = threading.Thread(target=search_clients, args=())
+        thread.start()
+        end_time = time.time()+10
+        num1 = random.randrange(1,4)
+        num2 = random.randrange(1,5)
+        answer = num1 + num2
+
+        while time.time() < end_time and count<2:
+
+            try:
+                # Send broadcast message to all clients
+                MSG = struct.pack('Ibh', 0xabcddcba, 0x2, 2054)
+                UDP_socket.sendto(MSG, ("<broadcast>", 14444))
+                time.sleep(1)
+
+            except:
+                time.sleep(1)
+        # If the number of clients is 2 - we can start the game
+        if count == 2:
+            start_game()
+            time.sleep(10)
+            check_results()
+            close_connections()
+
+        print("Game over, sending out offer requests...")
         time.sleep(1)
+
 
 if __name__ == '__main__':
     main()
