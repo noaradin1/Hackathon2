@@ -21,6 +21,7 @@ num2 = random.randrange(1,5)
 answer = num1 + num2
 TCP_socket = None
 is_first = True
+broadcast = "172.99.255.255"
 
 def search_clients():
     global count
@@ -89,7 +90,7 @@ def start_game():
                         "Player 1:\n==\n" + list(Players.keys())[0]\
                         +"Player 2:\n==\n" + list(Players.keys())[1] +\
                         "\nPlease answer the following question as fast as you can:\n How much is " +str(num1) + " + " +str(num2)
-        print("created welcoming message")
+        print(welcome_game)
         # For each connection, send the welcoming message and send the player to the relevant function
         options = [Player1,Player2]
         for i in range(len(connections)):
@@ -223,8 +224,8 @@ def main():
             try:
                 # Send broadcast message to all clients
                 MSG = struct.pack('Ibh', 0xabcddcba, 0x2, 2054)
-                broadcast = "<broadcast>"
-                UDP_socket.sendto(MSG, ("172.99.255.255", 13117))
+                #broadcast = "<broadcast>"
+                UDP_socket.sendto(MSG, (broadcast, 13117))
                 time.sleep(1)
 
             except:
