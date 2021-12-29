@@ -202,13 +202,12 @@ def main():
     global num1
     global num2
     global answer
-    #ip = scapy.all.get_if_addr('eth1')
     # Create UDP socket, listening in port 2054
     UDP_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     UDP_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     UDP_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     UDP_socket.bind(('', 2054))
-    print(u"\u001B[32mServer started' listening on IP address 172.18.0.120\u001B[32m")
+    print(u"\u001B[32mServer started' listening on IP address 172.99.0.54\u001B[32m")
     # Search for new clients
     while True:
         count = 0
@@ -225,7 +224,7 @@ def main():
                 # Send broadcast message to all clients
                 MSG = struct.pack('Ibh', 0xabcddcba, 0x2, 2054)
                 broadcast = "<broadcast>"
-                UDP_socket.sendto(MSG, ("172.99.255.255", 14444))
+                UDP_socket.sendto(MSG, ("172.99.255.255", 13117))
                 time.sleep(1)
 
             except:
